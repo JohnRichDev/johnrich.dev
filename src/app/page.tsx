@@ -119,7 +119,7 @@ export default function Home() {
                       key={tech.name}
                       className="cursor-pointer select-none flex items-center gap-2 bg-neutral-800 px-3 py-1 rounded"
                     >
-                      <Icon className="text-lg text-white"/>
+                      <Icon className="text-lg text-white" />
                       <span>{tech.name}</span>
                     </span>
                   );
