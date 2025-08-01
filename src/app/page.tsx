@@ -4,10 +4,7 @@ import React from 'react';
 import { FaJava, FaPhp, FaCss3Alt, FaNodeJs, FaHtml5 } from 'react-icons/fa';
 import { SiCplusplus, SiC, SiLua, SiMysql, SiJavascript } from 'react-icons/si';
 import Image from 'next/image';
-import { Inter } from 'next/font/google';
 import { motion } from 'framer-motion';
-
-const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 const technologies = [
   { name: 'Lua', icon: SiLua },
@@ -80,7 +77,6 @@ export default function Home() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className={inter.className}
       >
         <section className="flex items-center justify-center min-h-screen px-4">
           <div className="bg-neutral-900 border border-neutral-800 p-10 rounded-lg shadow-xl max-w-2xl w-full">
@@ -123,7 +119,7 @@ export default function Home() {
                       key={tech.name}
                       className="cursor-pointer select-none flex items-center gap-2 bg-neutral-800 px-3 py-1 rounded"
                     >
-                      <Icon className="text-lg" style={{ color: 'white' }} />
+                      <Icon className="text-lg text-white"/>
                       <span>{tech.name}</span>
                     </span>
                   );
