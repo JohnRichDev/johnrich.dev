@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: ['framer-motion', '@components'],
+    optimizePackageImports: ['framer-motion', '@/components'],
   },
 };
 
