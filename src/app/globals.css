@@ -28,3 +28,13 @@ body {
 [data-state='on'] {
   font-weight: 500;
 }
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+::selection {
+  background-color: gray;
+  color: var(--foreground);
+}

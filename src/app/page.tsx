@@ -4,7 +4,7 @@ import React from 'react';
 import { FaJava, FaPhp, FaCss3Alt, FaNodeJs, FaHtml5 } from 'react-icons/fa';
 import { SiCplusplus, SiC, SiLua, SiMysql, SiJavascript } from 'react-icons/si';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const technologies = [
   { name: 'Lua', icon: SiLua },
@@ -35,29 +35,75 @@ function MorphingTitle({
   style = {},
 }: MorphingTitleProps) {
   const [current, setCurrent] = React.useState(0);
-  const [fade, setFade] = React.useState(true);
 
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setCurrent((prev) => (prev + 1) % titles.length);
-        setFade(true);
-      }, fadeDuration);
-    }, cycleDuration);
-    return () => clearInterval(interval);
-  }, [titles.length, fadeDuration, cycleDuration]);
+    let interval: number | null = null;
+    let hideTime: number | null = null;
+    let paused = false;
+    const startCycle = () => {
+      if (interval === null) {
+        interval = window.setInterval(() => {
+          setCurrent((prev) => (prev + 1) % titles.length);
+        }, cycleDuration);
+      }
+    };
+    const stopCycle = () => {
+      if (interval !== null) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopCycle();
+        paused = true;
+        hideTime = Date.now();
+      } else {
+        if (paused) {
+          const elapsed = hideTime ? Date.now() - hideTime : 0;
+          if (elapsed >= fadeDuration) {
+            setCurrent((prev) => (prev + 1) % titles.length);
+          }
+        }
+        paused = false;
+        startCycle();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startCycle();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopCycle();
+    };
+  }, [titles.length, cycleDuration]);
 
   return (
-    <motion.p
-      initial={{ opacity: 0 }}
-      animate={{ opacity: fade ? 1 : 0 }}
-      transition={{ duration: fadeDuration / 1000 }}
+    <span
       className={className}
-      style={{ minHeight: 24, ...style }}
+      style={{
+        display: 'inline-block',
+        overflow: 'hidden',
+        position: 'relative',
+        minHeight: 24,
+        ...style,
+      }}
     >
-      {titles[current]}
-    </motion.p>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={current}
+          initial={{ clipPath: 'inset(0 100% 0 0)', opacity: 0 }}
+          animate={{ clipPath: 'inset(0 0% 0 0)', opacity: 1 }}
+          exit={{ clipPath: 'inset(0 100% 0 0)', opacity: 1 }}
+          transition={{ duration: fadeDuration / 1000, ease: [0.6, -0.05, 0.01, 0.99] }}
+          style={{ display: 'inline-block', position: 'relative' }}
+        >
+          {titles[current]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }
 
@@ -98,6 +144,8 @@ export default function Home() {
                 className="cursor-pointer select-none rounded-full object-cover border border-neutral-700"
                 priority
                 loading="eager"
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
               />
             </div>
 
