@@ -60,7 +60,7 @@ const MorphingTitle: React.FC<MorphingTitleProps> = ({
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             stopCycle();
         };
-    }, [titles.length, cycleDuration]);
+    }, [titles.length, cycleDuration, fadeDuration]);
 
     return (
         <span
