@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FaJava, FaPhp, FaCss3Alt, FaNodeJs, FaHtml5 } from 'react-icons/fa';
 import { SiCplusplus, SiC, SiLua, SiMysql, SiJavascript } from 'react-icons/si';
-import Image from 'next/image';
 import MorphingTitle from './components/MorphingTitle';
 import TechBadge from './components/TechBadge';
 import AnimatedContainer from './components/AnimatedContainer';
+import Profile from './components/Profile';
 
 const technologies = [
   { name: 'Lua', icon: SiLua },
@@ -22,6 +22,8 @@ const technologies = [
 ];
 
 export default function Home() {
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+
   const titles = [
     'Backend Developer',
     'Self-taught Developer',
@@ -32,7 +34,7 @@ export default function Home() {
 
   return (
     <>
-      <AnimatedContainer>
+      <AnimatedContainer isLoading={isProfileLoading}>
         <section className="flex items-center justify-center min-h-screen px-4">
           <div className="bg-neutral-900 border border-neutral-800 p-10 rounded-lg shadow-xl max-w-2xl w-full">
             <div className="flex items-center justify-between gap-6 mb-6">
@@ -45,16 +47,9 @@ export default function Home() {
                 />
               </div>
 
-              <Image
-                src="/profile.png"
-                alt="John Rich"
-                width={70}
-                height={70}
-                className="cursor-pointer select-none rounded-full object-cover border border-neutral-700"
-                priority
-                loading="eager"
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
+              <Profile
+                size={70}
+                onLoadingStateChange={setIsProfileLoading}
               />
             </div>
 

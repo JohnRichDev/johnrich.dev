@@ -5,13 +5,14 @@ import { motion } from 'framer-motion';
 
 interface AnimatedContainerProps {
     children: React.ReactNode;
+    isLoading?: boolean;
 }
 
-export default function AnimatedContainer({ children }: AnimatedContainerProps) {
+export default function AnimatedContainer({ children, isLoading = false }: AnimatedContainerProps) {
     return (
         <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: isLoading ? 0 : 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.5 }}
         >
