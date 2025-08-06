@@ -113,7 +113,6 @@ export default function DiscordProfile({
     });
 
     const fetchUserData = useCallback(async (isMountedRef?: { current: boolean }) => {
-        console.log('Fetching user data from REST API...');
         try {
             const response = await fetch(`${apiEndpoint}/user/${userId}`, {
                 method: 'GET',
@@ -124,17 +123,14 @@ export default function DiscordProfile({
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('REST API response:', data);
 
                 if (isMountedRef && !isMountedRef.current) return;
 
                 if (data.avatarUrl) {
-                    console.log('Setting avatar URL from REST API:', data.avatarUrl);
                     setAvatarUrl(data.avatarUrl);
                 }
 
                 if (data.status) {
-                    console.log('Setting status from REST API:', data.status);
                     setStatus(data.status);
                 }
 
@@ -148,13 +144,11 @@ export default function DiscordProfile({
                 onLoadingStateChange?.(false);
 
             } else {
-                console.warn(`API returned ${response.status}: ${response.statusText}`);
                 setAvatarUrl('/profile.png');
                 setShowContent(true);
                 onLoadingStateChange?.(false);
             }
         } catch (error) {
-            console.error('Failed to fetch user data:', error);
             setAvatarUrl('/profile.png');
             setShowContent(true);
             onLoadingStateChange?.(false);
@@ -177,7 +171,6 @@ export default function DiscordProfile({
 
         const fallbackTimeout = setTimeout(() => {
             if (isMountedRef.current && !showContent) {
-                console.log('Fallback timeout triggered, showing content');
                 setShowContent(true);
                 onLoadingStateChange?.(false);
             }
@@ -197,26 +190,16 @@ export default function DiscordProfile({
         });
 
         socket.on('connect', () => {
-            console.log('Connected to Discord presence socket');
             socket.emit('subscribe', {
                 userId,
                 updateTypes: [UPDATE_TYPE_STATUS]
             });
         });
 
-        socket.on('disconnect', (reason) => {
-            console.log('Disconnected from Discord presence socket:', reason);
-        });
-
-        socket.on('connect_error', (error) => {
-            console.warn('Socket connection error:', error.message);
-        });
-
         socket.on('userUpdate', (data: UserUpdateData) => {
             if (!isMountedRef.current) return;
 
             if (data.updateType === UPDATE_TYPE_STATUS && data.status && data.status !== status) {
-                console.log('Status update received via WebSocket:', data.status);
                 setStatus(data.status);
 
                 const cached = avatarCache.get(userId);
@@ -230,10 +213,6 @@ export default function DiscordProfile({
             }
         });
 
-        socket.on('error', (error: Error) => {
-            console.warn('Socket error (non-critical):', error);
-        });
-
         return () => {
             isMountedRef.current = false;
             socket.disconnect();
@@ -242,14 +221,6 @@ export default function DiscordProfile({
     }, [userId, apiEndpoint, avatarUrl, status, hasCachedData, fetchUserData, onLoadingStateChange, showContent]);
 
     const shouldShowSkeleton = !showContent && isLoading;
-
-    console.log('DiscordProfile render:', {
-        showContent,
-        isLoading,
-        shouldShowSkeleton,
-        avatarUrl,
-        hasCachedData: hasCachedData()
-    });
 
     return (
         <div className="relative">
@@ -273,7 +244,6 @@ export default function DiscordProfile({
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
                         onError={() => {
-                            console.log('Image onError called, falling back to /profile.png');
                             if (avatarUrl !== '/profile.png') {
                                 setAvatarUrl('/profile.png');
                             }
