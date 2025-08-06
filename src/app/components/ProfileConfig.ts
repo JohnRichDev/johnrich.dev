@@ -6,6 +6,8 @@ export const profileConfig = {
   discord: {
     userId: '150471906536062976',
     apiEndpoint: 'https://discord-presence-api.johnrich.dev',
-    showStatus: true
+    showStatus: true,
+    connectionMode: 'websocket' as 'websocket' | 'polling',
+    pollingInterval: 30000
   }
 };

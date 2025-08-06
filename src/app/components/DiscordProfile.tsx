@@ -2,17 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import io from 'socket.io-client';
 import Skeleton from './Skeleton';
-
-const UPDATE_TYPE_STATUS = 'status';
-const UPDATE_TYPE_AVATAR = 'avatar';
-
-interface UserUpdateData {
-    updateType: string;
-    avatarUrl?: string;
-    status?: string;
-}
+import { useDiscordSocket } from './hooks/useDiscordSocket';
+import { useDiscordPolling } from './hooks/useDiscordPolling';
 
 const StatusIcon = ({ status, size = 18 }: { status: string; size?: number }) => {
     const svgProps = {
@@ -37,10 +29,17 @@ const StatusIcon = ({ status, size = 18 }: { status: string; size?: number }) =>
             );
         case 'dnd':
             return (
-                <svg {...svgProps}>
-                    <circle cx="30" cy="30" r="30" fill="#d63a42" />
-                    <rect x="15" y="22.5" width="30" height="15" rx="7.5" fill="#d63a42" />
-                    <rect x="7.5" y="22.5" width="45" height="15" rx="7.5" fill="white" />
+                <svg {...svgProps} viewBox="0 0 60 60">
+                    <defs>
+                        <mask id="cutout">
+
+                            <rect width="100%" height="100%" fill="white" />
+                            <rect x="7.5" y="22.5" width="45" height="15" rx="7.5" fill="black" />
+                        </mask>
+                    </defs>
+
+
+                    <circle cx="30" cy="30" r="30" fill="#d63a42" mask="url(#cutout)" />
                 </svg>
             );
         case 'offline':
@@ -61,6 +60,8 @@ interface DiscordProfileProps {
     size?: number;
     showStatus?: boolean;
     className?: string;
+    connectionMode?: 'websocket' | 'polling';
+    pollingInterval?: number;
     onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
@@ -77,6 +78,8 @@ export default function DiscordProfile({
     size = 70,
     showStatus = true,
     className = '',
+    connectionMode = 'websocket',
+    pollingInterval = 30000,
     onLoadingStateChange
 }: DiscordProfileProps) {
     const getCachedAvatarUrl = () => {
@@ -148,7 +151,7 @@ export default function DiscordProfile({
                 setShowContent(true);
                 onLoadingStateChange?.(false);
             }
-        } catch (error) {
+        } catch {
             setAvatarUrl('/profile.png');
             setShowContent(true);
             onLoadingStateChange?.(false);
@@ -158,6 +161,36 @@ export default function DiscordProfile({
             }
         }
     }, [apiEndpoint, userId, onLoadingStateChange]);
+
+    const handleStatusUpdate = useCallback((newStatus: string) => {
+        if (newStatus !== status) {
+            setStatus(newStatus);
+
+            const cached = avatarCache.get(userId);
+            if (cached) {
+                avatarCache.set(userId, {
+                    ...cached,
+                    status: newStatus,
+                    timestamp: Date.now()
+                });
+            }
+        }
+    }, [userId, status]);
+
+    useDiscordSocket({
+        apiEndpoint,
+        userId,
+        onStatusUpdate: handleStatusUpdate,
+        enabled: showStatus && connectionMode === 'websocket'
+    });
+
+    useDiscordPolling({
+        apiEndpoint,
+        userId,
+        onStatusUpdate: handleStatusUpdate,
+        enabled: showStatus && connectionMode === 'polling',
+        interval: pollingInterval
+    });
 
     useEffect(() => {
         const isMountedRef = { current: true };
@@ -181,44 +214,11 @@ export default function DiscordProfile({
             fetchUserData(isMountedRef);
         }
 
-        const socket = io(apiEndpoint, {
-            timeout: 10000,
-            retries: 2,
-            autoConnect: true,
-            transports: ['polling', 'websocket'],
-            upgrade: true,
-        });
-
-        socket.on('connect', () => {
-            socket.emit('subscribe', {
-                userId,
-                updateTypes: [UPDATE_TYPE_STATUS]
-            });
-        });
-
-        socket.on('userUpdate', (data: UserUpdateData) => {
-            if (!isMountedRef.current) return;
-
-            if (data.updateType === UPDATE_TYPE_STATUS && data.status && data.status !== status) {
-                setStatus(data.status);
-
-                const cached = avatarCache.get(userId);
-                if (cached) {
-                    avatarCache.set(userId, {
-                        ...cached,
-                        status: data.status,
-                        timestamp: Date.now()
-                    });
-                }
-            }
-        });
-
         return () => {
             isMountedRef.current = false;
-            socket.disconnect();
             clearTimeout(fallbackTimeout);
         };
-    }, [userId, apiEndpoint, avatarUrl, status, hasCachedData, fetchUserData, onLoadingStateChange, showContent]);
+    }, [userId, apiEndpoint, hasCachedData, fetchUserData, onLoadingStateChange, showContent]);
 
     const shouldShowSkeleton = !showContent && isLoading;
 
