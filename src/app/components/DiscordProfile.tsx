@@ -1,12 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import io from 'socket.io-client';
 import Skeleton from './Skeleton';
 
 const UPDATE_TYPE_STATUS = 'status';
 const UPDATE_TYPE_AVATAR = 'avatar';
+
+interface UserUpdateData {
+    updateType: string;
+    avatarUrl?: string;
+    status?: string;
+}
 
 const StatusIcon = ({ status, size = 18 }: { status: string; size?: number }) => {
     const svgProps = {
@@ -91,19 +97,23 @@ export default function DiscordProfile({
         return 'offline';
     };
 
-    const [avatarUrl, setAvatarUrl] = useState(getCachedAvatarUrl());
-    const [status, setStatus] = useState(getCachedStatus());
-    const [isLoading, setIsLoading] = useState(false);
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [showContent, setShowContent] = useState(false);
-
-    const hasCachedData = () => {
+    const hasCachedData = useCallback(() => {
         const cached = avatarCache.get(userId);
         const now = Date.now();
         return isCacheValid(cached, now);
-    };
+    }, [userId]);
 
-    const fetchUserData = async (isMountedRef?: { current: boolean }) => {
+    const [avatarUrl, setAvatarUrl] = useState(getCachedAvatarUrl());
+    const [status, setStatus] = useState(getCachedStatus());
+    const [isLoading, setIsLoading] = useState(false);
+    const [showContent, setShowContent] = useState(() => {
+        const cached = avatarCache.get(userId);
+        const now = Date.now();
+        return isCacheValid(cached, now);
+    });
+
+    const fetchUserData = useCallback(async (isMountedRef?: { current: boolean }) => {
+        console.log('Fetching user data from REST API...');
         try {
             const response = await fetch(`${apiEndpoint}/user/${userId}`, {
                 method: 'GET',
@@ -111,25 +121,20 @@ export default function DiscordProfile({
                     'Accept': 'application/json',
                 },
             });
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('REST API response:', data);
 
                 if (isMountedRef && !isMountedRef.current) return;
 
-                if (data.avatarUrl && data.avatarUrl !== avatarUrl) {
-                    const img = document.createElement('img');
-                    img.onload = () => {
-                        if (!isMountedRef || isMountedRef.current) {
-                            setAvatarUrl(data.avatarUrl);
-                            setImageLoaded(false);
-                        }
-                    };
-                    img.onerror = () => {
-                        console.warn('Failed to preload Discord avatar');
-                    };
-                    img.src = data.avatarUrl;
+                if (data.avatarUrl) {
+                    console.log('Setting avatar URL from REST API:', data.avatarUrl);
+                    setAvatarUrl(data.avatarUrl);
                 }
+
                 if (data.status) {
+                    console.log('Setting status from REST API:', data.status);
                     setStatus(data.status);
                 }
 
@@ -138,31 +143,27 @@ export default function DiscordProfile({
                     status: data.status || 'offline',
                     timestamp: Date.now()
                 });
+
+                setShowContent(true);
+                onLoadingStateChange?.(false);
+
             } else {
                 console.warn(`API returned ${response.status}: ${response.statusText}`);
-                if (avatarUrl === '/profile.png') {
-                    avatarCache.set(userId, {
-                        avatarUrl: '/profile.png',
-                        status: 'offline',
-                        timestamp: Date.now()
-                    });
-                }
+                setAvatarUrl('/profile.png');
+                setShowContent(true);
+                onLoadingStateChange?.(false);
             }
         } catch (error) {
             console.error('Failed to fetch user data:', error);
-            if (avatarUrl === '/profile.png') {
-                avatarCache.set(userId, {
-                    avatarUrl: '/profile.png',
-                    status: 'offline',
-                    timestamp: Date.now()
-                });
-            }
+            setAvatarUrl('/profile.png');
+            setShowContent(true);
+            onLoadingStateChange?.(false);
         } finally {
             if (!isMountedRef || isMountedRef.current) {
                 setIsLoading(false);
             }
         }
-    };
+    }, [apiEndpoint, userId, onLoadingStateChange]);
 
     useEffect(() => {
         const isMountedRef = { current: true };
@@ -174,22 +175,32 @@ export default function DiscordProfile({
             onLoadingStateChange?.(true);
         }
 
+        const fallbackTimeout = setTimeout(() => {
+            if (isMountedRef.current && !showContent) {
+                console.log('Fallback timeout triggered, showing content');
+                setShowContent(true);
+                onLoadingStateChange?.(false);
+            }
+        }, 50);
+
         if (!hasCachedData()) {
             setIsLoading(true);
             fetchUserData(isMountedRef);
         }
 
         const socket = io(apiEndpoint, {
-            timeout: 5000,
-            retries: 3,
+            timeout: 10000,
+            retries: 2,
             autoConnect: true,
+            transports: ['polling', 'websocket'],
+            upgrade: true,
         });
 
         socket.on('connect', () => {
             console.log('Connected to Discord presence socket');
             socket.emit('subscribe', {
                 userId,
-                updateTypes: [UPDATE_TYPE_STATUS, UPDATE_TYPE_AVATAR]
+                updateTypes: [UPDATE_TYPE_STATUS]
             });
         });
 
@@ -201,51 +212,44 @@ export default function DiscordProfile({
             console.warn('Socket connection error:', error.message);
         });
 
-        socket.on('userUpdate', (data: any) => {
+        socket.on('userUpdate', (data: UserUpdateData) => {
             if (!isMountedRef.current) return;
 
-            const isRelevantUpdate = data.updateType === UPDATE_TYPE_STATUS || data.updateType === UPDATE_TYPE_AVATAR;
-            if (!isRelevantUpdate) return;
-
-            if (data.avatarUrl && data.avatarUrl !== avatarUrl) {
-                const img = document.createElement('img');
-                img.onload = () => {
-                    if (isMountedRef.current) {
-                        setAvatarUrl(data.avatarUrl);
-                        setImageLoaded(false);
-                    }
-                };
-                img.onerror = () => {
-                    console.warn('Failed to preload Discord avatar from socket');
-                };
-                img.src = data.avatarUrl;
-            }
-            if (data.status && data.status !== status) {
+            if (data.updateType === UPDATE_TYPE_STATUS && data.status && data.status !== status) {
+                console.log('Status update received via WebSocket:', data.status);
                 setStatus(data.status);
-            }
 
-            if (data.avatarUrl || data.status) {
                 const cached = avatarCache.get(userId);
-                avatarCache.set(userId, {
-                    avatarUrl: data.avatarUrl || cached?.avatarUrl || '/profile.png',
-                    status: data.status || cached?.status || 'offline',
-                    timestamp: Date.now()
-                });
+                if (cached) {
+                    avatarCache.set(userId, {
+                        ...cached,
+                        status: data.status,
+                        timestamp: Date.now()
+                    });
+                }
             }
         });
 
-        socket.on('error', (error: any) => {
-            console.error('Socket error:', error);
+        socket.on('error', (error: Error) => {
+            console.warn('Socket error (non-critical):', error);
         });
 
         return () => {
             isMountedRef.current = false;
             socket.disconnect();
+            clearTimeout(fallbackTimeout);
         };
-    }, [userId]);
+    }, [userId, apiEndpoint, avatarUrl, status, hasCachedData, fetchUserData, onLoadingStateChange, showContent]);
 
-    const shouldShowSkeleton = !hasCachedData() && isLoading;
-    const shouldShowContent = showContent && !shouldShowSkeleton;
+    const shouldShowSkeleton = !showContent && isLoading;
+
+    console.log('DiscordProfile render:', {
+        showContent,
+        isLoading,
+        shouldShowSkeleton,
+        avatarUrl,
+        hasCachedData: hasCachedData()
+    });
 
     return (
         <div className="relative">
@@ -257,7 +261,7 @@ export default function DiscordProfile({
                     className="border border-neutral-700"
                 />
             ) : (
-                <div className={`relative transition-opacity duration-300 ${shouldShowContent ? 'opacity-100' : 'opacity-0'}`}>
+                <div className={`relative transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
                     <Image
                         src={avatarUrl}
                         alt="Profile"
@@ -268,16 +272,8 @@ export default function DiscordProfile({
                         loading={hasCachedData() ? "eager" : "lazy"}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
-                        onLoad={() => {
-                            setImageLoaded(true);
-                            if (!showContent) {
-                                setTimeout(() => {
-                                    setShowContent(true);
-                                    onLoadingStateChange?.(false);
-                                }, 200);
-                            }
-                        }}
-                        onError={(e) => {
+                        onError={() => {
+                            console.log('Image onError called, falling back to /profile.png');
                             if (avatarUrl !== '/profile.png') {
                                 setAvatarUrl('/profile.png');
                             }
@@ -293,7 +289,7 @@ export default function DiscordProfile({
             )}
 
             {showStatus && (
-                <div className={`absolute -bottom-0.5 -right-0.5 transition-opacity duration-300 ${shouldShowContent ? 'opacity-100' : 'opacity-0'}`}>
+                <div className={`absolute -bottom-0.5 -right-0.5 transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
                     <div className="relative transition-all duration-300 ease-in-out">
                         {shouldShowSkeleton ? (
                             <Skeleton

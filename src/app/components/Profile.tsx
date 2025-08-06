@@ -12,10 +12,13 @@ interface ProfileProps {
 }
 
 export default function Profile({ size = 70, className = '', onLoadingStateChange }: ProfileProps) {
-  if (profileConfig.type === 'static') {
-    React.useEffect(() => {
+  React.useEffect(() => {
+    if (profileConfig.type === 'static') {
       onLoadingStateChange?.(false);
-    }, [onLoadingStateChange]);
+    }
+  }, [onLoadingStateChange]);
+
+  if (profileConfig.type === 'static') {
 
     return (
       <div className="relative">
