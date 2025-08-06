@@ -77,7 +77,7 @@ export default function DiscordProfile({
         const cached = avatarCache.get(userId);
         const now = Date.now();
         if (isCacheValid(cached, now)) {
-            return cached!.avatarUrl;
+            return cached?.avatarUrl ?? '/profile.png';
         }
         return '/profile.png';
     };
@@ -86,7 +86,7 @@ export default function DiscordProfile({
         const cached = avatarCache.get(userId);
         const now = Date.now();
         if (isCacheValid(cached, now)) {
-            return cached!.status;
+            return cached?.status ?? 'offline';
         }
         return 'offline';
     };
