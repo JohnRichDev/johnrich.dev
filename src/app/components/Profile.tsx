@@ -43,6 +43,8 @@ export default function Profile({ size = 70, className = '', onLoadingStateChang
         apiEndpoint={profileConfig.discord.apiEndpoint}
         size={size}
         showStatus={profileConfig.discord.showStatus}
+        connectionMode={profileConfig.discord.connectionMode}
+        pollingInterval={profileConfig.discord.pollingInterval}
         className={className}
         onLoadingStateChange={onLoadingStateChange}
       />
