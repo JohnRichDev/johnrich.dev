@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { FaJava, FaPhp, FaCss3Alt, FaNodeJs, FaHtml5 } from 'react-icons/fa';
 import { SiCplusplus, SiC, SiLua, SiMysql, SiJavascript } from 'react-icons/si';
-import MorphingTitle from './components/MorphingTitle';
-import TechBadge from './components/TechBadge';
-import AnimatedContainer from './components/AnimatedContainer';
-import Profile from './components/Profile';
+import MorphingTitle from './components/animations/MorphingTitle';
+import TechBadge from './components/ui/TechBadge';
+import AnimatedContainer from './components/ui/AnimatedContainer';
+import Profile from './components/profile/Profile';
 
 const technologies = [
   { name: 'Lua', icon: SiLua },

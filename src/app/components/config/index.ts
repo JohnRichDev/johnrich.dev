@@ -1,0 +1,1 @@
+export { profileConfig } from './ProfileConfig';

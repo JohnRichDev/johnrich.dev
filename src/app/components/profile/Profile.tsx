@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import DiscordProfile from './DiscordProfile';
-import { profileConfig } from './ProfileConfig';
+import { profileConfig } from '../config/ProfileConfig';
 
 interface ProfileProps {
   size?: number;
