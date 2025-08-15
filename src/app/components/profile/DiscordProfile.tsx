@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import Skeleton from './Skeleton';
-import { useDiscordSocket } from './hooks/useDiscordSocket';
-import { useDiscordPolling } from './hooks/useDiscordPolling';
+import Skeleton from '../ui/Skeleton';
+import { useDiscordSocket } from '../hooks/useDiscordSocket';
+import { useDiscordPolling } from '../hooks/useDiscordPolling';
 
 const StatusIcon = ({ status, size = 18 }: { status: string; size?: number }) => {
     const svgProps = {
