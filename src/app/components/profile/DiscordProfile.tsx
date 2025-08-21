@@ -88,7 +88,7 @@ export default function DiscordProfile({
         if (isCacheValid(cached, now)) {
             return cached?.avatarUrl ?? '/profile.png';
         }
-        return '/profile.png';
+        return null;
     };
 
     const getCachedStatus = () => {
@@ -106,7 +106,7 @@ export default function DiscordProfile({
         return isCacheValid(cached, now);
     }, [userId]);
 
-    const [avatarUrl, setAvatarUrl] = useState(getCachedAvatarUrl());
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(getCachedAvatarUrl());
     const [status, setStatus] = useState(getCachedStatus());
     const [isLoading, setIsLoading] = useState(false);
     const [showContent, setShowContent] = useState(() => {
@@ -221,6 +221,7 @@ export default function DiscordProfile({
     }, [userId, apiEndpoint, hasCachedData, fetchUserData, onLoadingStateChange, showContent]);
 
     const shouldShowSkeleton = !showContent && isLoading;
+    const shouldRenderImage = showContent && avatarUrl !== null;
 
     return (
         <div className="relative">
@@ -231,10 +232,10 @@ export default function DiscordProfile({
                     shape="circle"
                     className="border border-neutral-700"
                 />
-            ) : (
+            ) : shouldRenderImage ? (
                 <div className={`relative transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
                     <Image
-                        src={avatarUrl}
+                        src={avatarUrl!}
                         alt="Profile"
                         width={size}
                         height={size}
@@ -248,7 +249,7 @@ export default function DiscordProfile({
                                 setAvatarUrl('/profile.png');
                             }
                         }}
-                        unoptimized={avatarUrl.startsWith('https://cdn.discordapp.com')}
+                        unoptimized={avatarUrl!.startsWith('https://cdn.discordapp.com')}
                     />
                     {isLoading && hasCachedData() && (
                         <div className="absolute inset-0 rounded-full bg-black bg-opacity-20 flex items-center justify-center">
@@ -256,6 +257,13 @@ export default function DiscordProfile({
                         </div>
                     )}
                 </div>
+            ) : (
+                <Skeleton
+                    width={size}
+                    height={size}
+                    shape="circle"
+                    className="border border-neutral-700"
+                />
             )}
 
             {showStatus && (
