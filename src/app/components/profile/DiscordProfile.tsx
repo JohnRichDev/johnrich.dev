@@ -47,8 +47,13 @@ const StatusIcon = ({ status, size = 18 }: { status: string; size?: number }) =>
         default:
             return (
                 <svg {...svgProps}>
-                    <circle cx="30" cy="30" r="30" fill="#83838b" />
-                    <circle cx="30" cy="30" r="15" fill="none" stroke="white" strokeWidth="7.5" />
+                    <defs>
+                        <mask id="offline-cutout">
+                            <rect width="100%" height="100%" fill="white" />
+                            <circle cx="30" cy="30" r="15" fill="black" />
+                        </mask>
+                    </defs>
+                    <circle cx="30" cy="30" r="30" fill="#83838b" mask="url(#offline-cutout)" />
                 </svg>
             );
     }

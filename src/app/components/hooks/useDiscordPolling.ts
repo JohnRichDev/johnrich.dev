@@ -38,7 +38,9 @@ export const useDiscordPolling = ({
                 }
             }
         } catch (error) {
-            console.warn('Failed to poll Discord status:', error);
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('Failed to poll Discord status:', error);
+            }
         }
     }, [apiEndpoint, userId, onStatusUpdate, enabled]);
 

@@ -77,7 +77,9 @@ export const useDiscordSocket = ({
         });
 
         globalSocket.on('connect_error', (error) => {
-            console.warn('Discord socket connection error:', error.message);
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('Discord socket connection error:', error.message);
+            }
 
             if (isMountedRef.current && reconnectTimeoutRef.current === null) {
                 reconnectTimeoutRef.current = setTimeout(() => {
@@ -91,7 +93,9 @@ export const useDiscordSocket = ({
         });
 
         globalSocket.on('disconnect', (reason) => {
-            console.warn('Discord socket disconnected:', reason);
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('Discord socket disconnected:', reason);
+            }
         });
 
         globalSocket.on('userUpdate', (data: { updateType: string; status?: string }) => {
