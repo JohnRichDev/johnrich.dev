@@ -168,7 +168,10 @@ export default function DiscordProfile({
     }, [apiEndpoint, userId, onLoadingStateChange]);
 
     const handleStatusUpdate = useCallback((newStatus: string) => {
-        if (newStatus !== status) {
+        if (newStatus && newStatus !== status) {
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(`Updating Discord status for user ${userId}:`, status, '->', newStatus);
+            }
             setStatus(newStatus);
 
             const cached = avatarCache.get(userId);
