@@ -10,6 +10,7 @@ interface UseDiscordSocketOptions {
 
 let globalSocket: Socket | null = null;
 let connectionCount = 0;
+const lastKnownStatus: { [userId: string]: string } = {};
 
 export const useDiscordSocket = ({
     apiEndpoint,
@@ -53,42 +54,37 @@ export const useDiscordSocket = ({
         }
 
         globalSocket = io(apiEndpoint, {
-            timeout: 15000,
-            retries: 3,
+            timeout: 20000,
             autoConnect: true,
-            transports: ['polling'],
+            transports: ['websocket', 'polling'],
             upgrade: true,
             forceNew: false,
             reconnection: true,
-            reconnectionAttempts: 3,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 2000,
+            reconnectionDelayMax: 10000,
         });
 
         connectionCount++;
 
         globalSocket.on('connect', () => {
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('Discord socket connected via:', globalSocket?.io.engine.transport.name);
+            }
             if (isMountedRef.current) {
                 globalSocket?.emit('subscribe', {
                     userId,
                     updateTypes: ['status']
                 });
+                if (process.env.NODE_ENV !== 'production') {
+                    console.log('Subscribed to Discord status updates for user:', userId);
+                }
             }
         });
 
         globalSocket.on('connect_error', (error) => {
             if (process.env.NODE_ENV !== 'production') {
                 console.warn('Discord socket connection error:', error.message);
-            }
-
-            if (isMountedRef.current && reconnectTimeoutRef.current === null) {
-                reconnectTimeoutRef.current = setTimeout(() => {
-                    if (globalSocket && isMountedRef.current) {
-                        globalSocket.io.opts.transports = ['polling'];
-                        globalSocket.connect();
-                    }
-                    reconnectTimeoutRef.current = null;
-                }, 2000);
             }
         });
 
@@ -98,11 +94,32 @@ export const useDiscordSocket = ({
             }
         });
 
+        globalSocket.on('upgrade', () => {
+            if (process.env.NODE_ENV !== 'production') {
+                console.log('Discord socket upgraded to:', globalSocket?.io.engine.transport.name);
+            }
+        });
+
+        globalSocket.on('upgradeError', (error) => {
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('Discord socket upgrade error:', error);
+            }
+        });
+
         globalSocket.on('userUpdate', (data: { updateType: string; status?: string }) => {
             if (!isMountedRef.current) return;
 
             if (data.updateType === 'status' && data.status) {
-                onStatusUpdate(data.status);
+                const previousStatus = lastKnownStatus[userId];
+                if (previousStatus !== data.status) {
+                    if (process.env.NODE_ENV !== 'production') {
+                        console.log(`Discord status changed for ${userId}:`, previousStatus, '->', data.status);
+                    }
+                    lastKnownStatus[userId] = data.status;
+                    onStatusUpdate(data.status);
+                } else if (process.env.NODE_ENV !== 'production') {
+                    console.log(`Discord status update received but unchanged for ${userId}:`, data.status);
+                }
             }
         });
 
