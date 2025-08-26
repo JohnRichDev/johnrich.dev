@@ -6,6 +6,7 @@ interface UseDiscordSocketOptions {
     userId: string;
     onStatusUpdate: (status: string) => void;
     enabled?: boolean;
+    onRateLimited?: () => void;
 }
 
 let globalSocket: Socket | null = null;
@@ -16,7 +17,8 @@ export const useDiscordSocket = ({
     apiEndpoint,
     userId,
     onStatusUpdate,
-    enabled = true
+    enabled = true,
+    onRateLimited
 }: UseDiscordSocketOptions) => {
     const isMountedRef = useRef(true);
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -86,6 +88,9 @@ export const useDiscordSocket = ({
             if (process.env.NODE_ENV !== 'production') {
                 console.warn('Discord socket connection error:', error.message);
             }
+            if (error.message.includes('429') || error.message.toLowerCase().includes('rate limit')) {
+                onRateLimited?.();
+            }
         });
 
         globalSocket.on('disconnect', (reason) => {
@@ -123,7 +128,7 @@ export const useDiscordSocket = ({
             }
         });
 
-    }, [apiEndpoint, userId, onStatusUpdate, enabled]);
+    }, [apiEndpoint, userId, onStatusUpdate, enabled, onRateLimited]);
 
     useEffect(() => {
         isMountedRef.current = true;

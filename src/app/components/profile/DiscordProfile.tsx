@@ -114,6 +114,7 @@ export default function DiscordProfile({
     const [avatarUrl, setAvatarUrl] = useState<string | null>(getCachedAvatarUrl());
     const [status, setStatus] = useState(getCachedStatus());
     const [isLoading, setIsLoading] = useState(false);
+    const [isRateLimited, setIsRateLimited] = useState(false);
     const [showContent, setShowContent] = useState(() => {
         const cached = avatarCache.get(userId);
         const now = Date.now();
@@ -134,6 +135,8 @@ export default function DiscordProfile({
 
                 if (isMountedRef && !isMountedRef.current) return;
 
+                setIsRateLimited(false);
+
                 if (data.avatarUrl) {
                     setAvatarUrl(data.avatarUrl);
                 }
@@ -148,6 +151,19 @@ export default function DiscordProfile({
                     timestamp: Date.now()
                 });
 
+                setShowContent(true);
+                onLoadingStateChange?.(false);
+
+            } else if (response.status === 429) {
+                if (process.env.NODE_ENV !== 'production') {
+                    console.warn('Discord API rate limited (429). Using backup profile and hiding status.');
+                }
+
+                if (isMountedRef && !isMountedRef.current) return;
+                
+                setIsRateLimited(true);
+                setAvatarUrl('/profile.png');
+                setStatus('offline');
                 setShowContent(true);
                 onLoadingStateChange?.(false);
 
@@ -166,6 +182,12 @@ export default function DiscordProfile({
             }
         }
     }, [apiEndpoint, userId, onLoadingStateChange]);
+
+    const handleRateLimited = useCallback(() => {
+        setIsRateLimited(true);
+        setAvatarUrl('/profile.png');
+        setStatus('offline');
+    }, []);
 
     const handleStatusUpdate = useCallback((newStatus: string) => {
         if (newStatus && newStatus !== status) {
@@ -189,7 +211,8 @@ export default function DiscordProfile({
         apiEndpoint,
         userId,
         onStatusUpdate: handleStatusUpdate,
-        enabled: showStatus && connectionMode === 'websocket'
+        enabled: showStatus && connectionMode === 'websocket',
+        onRateLimited: handleRateLimited
     });
 
     useDiscordPolling({
@@ -197,7 +220,8 @@ export default function DiscordProfile({
         userId,
         onStatusUpdate: handleStatusUpdate,
         enabled: showStatus && connectionMode === 'polling',
-        interval: pollingInterval
+        interval: pollingInterval,
+        onRateLimited: handleRateLimited
     });
 
     useEffect(() => {
@@ -274,7 +298,7 @@ export default function DiscordProfile({
                 />
             )}
 
-            {showStatus && (
+            {showStatus && !isRateLimited && (
                 <div className={`absolute -bottom-0.5 -right-0.5 transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
                     <div className="relative transition-all duration-300 ease-in-out">
                         {shouldShowSkeleton ? (
