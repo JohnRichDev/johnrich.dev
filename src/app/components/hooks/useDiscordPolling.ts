@@ -6,6 +6,7 @@ interface UseDiscordPollingOptions {
     onStatusUpdate: (status: string) => void;
     enabled?: boolean;
     interval?: number;
+    onRateLimited?: () => void;
 }
 
 export const useDiscordPolling = ({
@@ -13,7 +14,8 @@ export const useDiscordPolling = ({
     userId,
     onStatusUpdate,
     enabled = true,
-    interval = 30000
+    interval = 30000,
+    onRateLimited
 }: UseDiscordPollingOptions) => {
     const isMountedRef = useRef(true);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -36,13 +38,23 @@ export const useDiscordPolling = ({
                     lastStatusRef.current = data.status;
                     onStatusUpdate(data.status);
                 }
+            } else if (response.status === 429) {
+                if (process.env.NODE_ENV !== 'production') {
+                    console.warn('Discord API rate limited during polling (429). Stopping polling temporarily.');
+                }   
+                onRateLimited?.();
+                
+                if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                }
             }
         } catch (error) {
             if (process.env.NODE_ENV !== 'production') {
                 console.warn('Failed to poll Discord status:', error);
             }
         }
-    }, [apiEndpoint, userId, onStatusUpdate, enabled]);
+    }, [apiEndpoint, userId, onStatusUpdate, enabled, onRateLimited]);
 
     useEffect(() => {
         isMountedRef.current = true;
