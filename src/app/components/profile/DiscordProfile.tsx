@@ -60,14 +60,14 @@ const StatusIcon = ({ status, size = 18 }: { status: string; size?: number }) =>
 };
 
 interface DiscordProfileProps {
-    userId?: string;
-    apiEndpoint?: string;
-    size?: number;
-    showStatus?: boolean;
-    className?: string;
-    connectionMode?: 'websocket' | 'polling';
-    pollingInterval?: number;
-    onLoadingStateChange?: (isLoading: boolean) => void;
+    readonly userId?: string;
+    readonly apiEndpoint?: string;
+    readonly size?: number;
+    readonly showStatus?: boolean;
+    readonly className?: string;
+    readonly connectionMode?: 'websocket' | 'polling';
+    readonly pollingInterval?: number;
+    readonly onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
 const avatarCache = new Map<string, { avatarUrl: string; status: string; timestamp: number }>();
@@ -122,6 +122,49 @@ export default function DiscordProfile({
     });
 
     const fetchUserData = useCallback(async (isMountedRef?: { current: boolean }) => {
+        const handleSuccess = (data: { avatarUrl?: string; status?: string }) => {
+            if (isMountedRef && !isMountedRef.current) return;
+
+            setIsRateLimited(false);
+
+            if (data.avatarUrl) {
+                setAvatarUrl(data.avatarUrl);
+            }
+
+            if (data.status) {
+                setStatus(data.status);
+            }
+
+            avatarCache.set(userId, {
+                avatarUrl: data.avatarUrl || '/profile.png',
+                status: data.status || 'offline',
+                timestamp: Date.now()
+            });
+
+            setShowContent(true);
+            onLoadingStateChange?.(false);
+        };
+
+        const handleRateLimit = () => {
+            if (process.env.NODE_ENV !== 'production') {
+                console.warn('Discord API rate limited (429). Using backup profile and hiding status.');
+            }
+
+            if (isMountedRef && !isMountedRef.current) return;
+            
+            setIsRateLimited(true);
+            setAvatarUrl('/profile.png');
+            setStatus('offline');
+            setShowContent(true);
+            onLoadingStateChange?.(false);
+        };
+
+        const handleError = () => {
+            setAvatarUrl('/profile.png');
+            setShowContent(true);
+            onLoadingStateChange?.(false);
+        };
+
         try {
             const response = await fetch(`${apiEndpoint}/user/${userId}`, {
                 method: 'GET',
@@ -132,50 +175,14 @@ export default function DiscordProfile({
 
             if (response.ok) {
                 const data = await response.json();
-
-                if (isMountedRef && !isMountedRef.current) return;
-
-                setIsRateLimited(false);
-
-                if (data.avatarUrl) {
-                    setAvatarUrl(data.avatarUrl);
-                }
-
-                if (data.status) {
-                    setStatus(data.status);
-                }
-
-                avatarCache.set(userId, {
-                    avatarUrl: data.avatarUrl || '/profile.png',
-                    status: data.status || 'offline',
-                    timestamp: Date.now()
-                });
-
-                setShowContent(true);
-                onLoadingStateChange?.(false);
-
+                handleSuccess(data);
             } else if (response.status === 429) {
-                if (process.env.NODE_ENV !== 'production') {
-                    console.warn('Discord API rate limited (429). Using backup profile and hiding status.');
-                }
-
-                if (isMountedRef && !isMountedRef.current) return;
-                
-                setIsRateLimited(true);
-                setAvatarUrl('/profile.png');
-                setStatus('offline');
-                setShowContent(true);
-                onLoadingStateChange?.(false);
-
+                handleRateLimit();
             } else {
-                setAvatarUrl('/profile.png');
-                setShowContent(true);
-                onLoadingStateChange?.(false);
+                handleError();
             }
         } catch {
-            setAvatarUrl('/profile.png');
-            setShowContent(true);
-            onLoadingStateChange?.(false);
+            handleError();
         } finally {
             if (!isMountedRef || isMountedRef.current) {
                 setIsLoading(false);
@@ -255,48 +262,58 @@ export default function DiscordProfile({
     const shouldShowSkeleton = !showContent && isLoading;
     const shouldRenderImage = showContent && avatarUrl !== null;
 
+    const renderImageContent = () => {
+        if (!shouldRenderImage || !avatarUrl) return null;
+
+        return (
+            <div className={`relative transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
+                <Image
+                    src={avatarUrl}
+                    alt="Profile"
+                    width={size}
+                    height={size}
+                    className={`cursor-pointer select-none rounded-full object-cover border border-neutral-700 transition-all duration-300 ease-in-out ${className}`}
+                    priority={hasCachedData()}
+                    loading={hasCachedData() ? "eager" : "lazy"}
+                    draggable={false}
+                    onDragStart={(e) => e.preventDefault()}
+                    onError={() => {
+                        if (avatarUrl !== '/profile.png') {
+                            setAvatarUrl('/profile.png');
+                        }
+                    }}
+                    unoptimized={avatarUrl.startsWith('https://cdn.discordapp.com')}
+                />
+                {isLoading && hasCachedData() && (
+                    <div className="absolute inset-0 rounded-full bg-black bg-opacity-20 flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderSkeleton = () => (
+        <Skeleton
+            width={size}
+            height={size}
+            shape="circle"
+            className="border border-neutral-700"
+        />
+    );
+
+    const renderMainContent = () => {
+        if (shouldShowSkeleton) {
+            return renderSkeleton();
+        }
+        
+        const imageContent = renderImageContent();
+        return imageContent || renderSkeleton();
+    };
+
     return (
         <div className="relative">
-            {shouldShowSkeleton ? (
-                <Skeleton
-                    width={size}
-                    height={size}
-                    shape="circle"
-                    className="border border-neutral-700"
-                />
-            ) : shouldRenderImage ? (
-                <div className={`relative transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>
-                    <Image
-                        src={avatarUrl!}
-                        alt="Profile"
-                        width={size}
-                        height={size}
-                        className={`cursor-pointer select-none rounded-full object-cover border border-neutral-700 transition-all duration-300 ease-in-out ${className}`}
-                        priority={hasCachedData()}
-                        loading={hasCachedData() ? "eager" : "lazy"}
-                        draggable={false}
-                        onDragStart={(e) => e.preventDefault()}
-                        onError={() => {
-                            if (avatarUrl !== '/profile.png') {
-                                setAvatarUrl('/profile.png');
-                            }
-                        }}
-                        unoptimized={avatarUrl!.startsWith('https://cdn.discordapp.com')}
-                    />
-                    {isLoading && hasCachedData() && (
-                        <div className="absolute inset-0 rounded-full bg-black bg-opacity-20 flex items-center justify-center">
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    )}
-                </div>
-            ) : (
-                <Skeleton
-                    width={size}
-                    height={size}
-                    shape="circle"
-                    className="border border-neutral-700"
-                />
-            )}
+            {renderMainContent()}
 
             {showStatus && !isRateLimited && (
                 <div className={`absolute -bottom-0.5 -right-0.5 transition-opacity duration-300 ${showContent ? 'opacity-100' : 'opacity-0'}`}>

@@ -22,6 +22,7 @@ const MorphingTitle: React.FC<MorphingTitleProps> = ({
         let interval: number | null = null;
         let hideTime: number | null = null;
         let paused = false;
+
         const startCycle = () => {
             if (interval === null) {
                 interval = window.setInterval(() => {
@@ -29,6 +30,7 @@ const MorphingTitle: React.FC<MorphingTitleProps> = ({
                 }, cycleDuration);
             }
         };
+
         const stopCycle = () => {
             if (interval !== null) {
                 clearInterval(interval);
@@ -36,20 +38,28 @@ const MorphingTitle: React.FC<MorphingTitleProps> = ({
             }
         };
 
+        const handleVisible = () => {
+            if (!paused) return;
+            
+            const elapsed = hideTime ? Date.now() - hideTime : 0;
+            if (elapsed >= fadeDuration) {
+                setCurrent((prev) => (prev + 1) % titles.length);
+            }
+            paused = false;
+            startCycle();
+        };
+
+        const handleHidden = () => {
+            stopCycle();
+            paused = true;
+            hideTime = Date.now();
+        };
+
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                stopCycle();
-                paused = true;
-                hideTime = Date.now();
+                handleHidden();
             } else {
-                if (paused) {
-                    const elapsed = hideTime ? Date.now() - hideTime : 0;
-                    if (elapsed >= fadeDuration) {
-                        setCurrent((prev) => (prev + 1) % titles.length);
-                    }
-                }
-                paused = false;
-                startCycle();
+                handleVisible();
             }
         };
 

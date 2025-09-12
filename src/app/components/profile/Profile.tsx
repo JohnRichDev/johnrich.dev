@@ -6,9 +6,9 @@ import DiscordProfile from './DiscordProfile';
 import { profileConfig } from '../config/ProfileConfig';
 
 interface ProfileProps {
-  size?: number;
-  className?: string;
-  onLoadingStateChange?: (isLoading: boolean) => void;
+  readonly size?: number;
+  readonly className?: string;
+  readonly onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
 export default function Profile({ size = 70, className = '', onLoadingStateChange }: ProfileProps) {

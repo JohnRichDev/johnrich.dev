@@ -41,7 +41,7 @@ export const useDiscordSocket = ({
     const initializeSocket = useCallback(() => {
         if (!enabled || !isMountedRef.current) return;
 
-        if (globalSocket && globalSocket.connected) {
+        if (globalSocket?.connected) {
             connectionCount++;
             globalSocket.emit('subscribe', {
                 userId,
@@ -50,26 +50,41 @@ export const useDiscordSocket = ({
             return;
         }
 
-        if (globalSocket && !globalSocket.connected) {
+        const shouldResetSocket = globalSocket && !globalSocket.connected;
+        if (shouldResetSocket && globalSocket) {
             globalSocket.disconnect();
             globalSocket = null;
         }
 
-        globalSocket = io(apiEndpoint, {
-            timeout: 20000,
-            autoConnect: true,
-            transports: ['websocket', 'polling'],
-            upgrade: true,
-            forceNew: false,
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 10000,
-        });
+        const createNewSocket = () => {
+            globalSocket = io(apiEndpoint, {
+                timeout: 20000,
+                autoConnect: true,
+                transports: ['websocket', 'polling'],
+                upgrade: true,
+                forceNew: false,
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 2000,
+                reconnectionDelayMax: 10000,
+            });
 
-        connectionCount++;
+            connectionCount++;
+            setupSocketHandlers();
+        };
 
-        globalSocket.on('connect', () => {
+        const setupSocketHandlers = () => {
+            if (!globalSocket) return;
+
+            globalSocket.on('connect', handleConnect);
+            globalSocket.on('connect_error', handleConnectError);
+            globalSocket.on('disconnect', handleDisconnect);
+            globalSocket.on('upgrade', handleUpgrade);
+            globalSocket.on('upgradeError', handleUpgradeError);
+            globalSocket.on('userUpdate', handleUserUpdate);
+        };
+
+        const handleConnect = () => {
             if (process.env.NODE_ENV !== 'production') {
                 console.log('Discord socket connected via:', globalSocket?.io.engine.transport.name);
             }
@@ -82,41 +97,44 @@ export const useDiscordSocket = ({
                     console.log('Subscribed to Discord status updates for user:', userId);
                 }
             }
-        });
+        };
 
-        globalSocket.on('connect_error', (error) => {
+        const handleConnectError = (error: Error) => {
             if (process.env.NODE_ENV !== 'production') {
                 console.warn('Discord socket connection error:', error.message);
             }
-            if (error.message.includes('429') || error.message.toLowerCase().includes('rate limit')) {
+            const isRateLimit = error.message.includes('429') || error.message.toLowerCase().includes('rate limit');
+            if (isRateLimit) {
                 onRateLimited?.();
             }
-        });
+        };
 
-        globalSocket.on('disconnect', (reason) => {
+        const handleDisconnect = (reason: string) => {
             if (process.env.NODE_ENV !== 'production') {
                 console.warn('Discord socket disconnected:', reason);
             }
-        });
+        };
 
-        globalSocket.on('upgrade', () => {
+        const handleUpgrade = () => {
             if (process.env.NODE_ENV !== 'production') {
                 console.log('Discord socket upgraded to:', globalSocket?.io.engine.transport.name);
             }
-        });
+        };
 
-        globalSocket.on('upgradeError', (error) => {
+        const handleUpgradeError = (error: Error) => {
             if (process.env.NODE_ENV !== 'production') {
                 console.warn('Discord socket upgrade error:', error);
             }
-        });
+        };
 
-        globalSocket.on('userUpdate', (data: { updateType: string; status?: string }) => {
+        const handleUserUpdate = (data: { updateType: string; status?: string }) => {
             if (!isMountedRef.current) return;
 
             if (data.updateType === 'status' && data.status) {
                 const previousStatus = lastKnownStatus[userId];
-                if (previousStatus !== data.status) {
+                const hasStatusChanged = previousStatus !== data.status;
+                
+                if (hasStatusChanged) {
                     if (process.env.NODE_ENV !== 'production') {
                         console.log(`Discord status changed for ${userId}:`, previousStatus, '->', data.status);
                     }
@@ -126,8 +144,9 @@ export const useDiscordSocket = ({
                     console.log(`Discord status update received but unchanged for ${userId}:`, data.status);
                 }
             }
-        });
+        };
 
+        createNewSocket();
     }, [apiEndpoint, userId, onStatusUpdate, enabled, onRateLimited]);
 
     useEffect(() => {
