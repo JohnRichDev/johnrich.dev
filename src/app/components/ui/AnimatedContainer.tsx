@@ -4,8 +4,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface AnimatedContainerProps {
-    children: React.ReactNode;
-    isLoading?: boolean;
+    readonly children: React.ReactNode;
+    readonly isLoading?: boolean;
 }
 
 export default function AnimatedContainer({ children, isLoading = false }: AnimatedContainerProps) {
