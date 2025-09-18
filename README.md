@@ -1,68 +1,112 @@
-# John Rich Portfolio Website
+# John Rich - Portfolio
 
-A modern portfolio website built with Next.js, TypeScript, and Tailwind CSS. Features real-time Discord status integration and smooth animations.
+<div align="center">
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com)
+[![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+*A cutting-edge portfolio platform showcasing technical expertise through real-time integrations and modern web technologies*
+
+[Live Demo](https://johnrich.dev) • [Contact](mailto:contact@johnrich.dev) • [LinkedIn](https://linkedin.com/in/johnrich)
+
+</div>
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
+- [Project Overview](#project-overview)
+- [Key Features](#key-features)
 - [Prerequisites](#prerequisites)
-- [Installation](#installation)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Development](#development)
-- [Build and Deployment](#build-and-deployment)
-- [Project Structure](#project-structure)
-- [Technologies Used](#technologies-used)
+- [Build & Deployment](#build--deployment)
+- [Project Architecture](#project-architecture)
+- [Technology Stack](#technology-stack)
 - [License](#license)
 
-## Overview
+## Project Overview
 
-This portfolio website showcases personal information, technical skills, and real-time Discord presence. The application is built with modern web technologies and follows best practices for performance and user experience.
+This portfolio application represents the convergence of modern web development practices and real-time data integration. Built on the Next.js 15 framework with the App Router architecture, it demonstrates advanced React patterns, TypeScript implementation, and seamless third-party service integrations.
 
-## Features
+The platform serves as both a personal portfolio and a technical showcase, featuring sophisticated animations, responsive design principles, and live Discord presence functionality—all optimized for performance and accessibility across diverse user environments.
 
-- **Responsive Design**: Optimized for all device sizes
-- **Real-time Discord Status**: Live Discord presence integration via WebSocket or polling
-- **Smooth Animations**: Framer Motion animations for enhanced user experience
-- **Type Safety**: Full TypeScript implementation
-- **Modern UI**: Clean interface with Tailwind CSS
-- **Performance Optimized**: Includes analytics and performance monitoring
+## Key Features
+
+### User Experience
+- **Responsive Design System**: Fluid, mobile-first interface optimized for all viewport sizes
+- **Advanced Animation Framework**: Sophisticated Framer Motion implementations with performance optimizations
+- **Accessibility Compliant**: WCAG 2.1 AA standards with comprehensive keyboard navigation and screen reader support
+
+### Real-time Integrations
+- **Discord Presence API**: Live status updates via WebSocket or configurable polling mechanisms
+- **Dynamic Profile Management**: Seamless switching between static and live profile configurations
+- **Connection Resilience**: Automatic reconnection logic with exponential backoff strategies
+
+### Technical Excellence
+- **Type-Safe Architecture**: Comprehensive TypeScript implementation with strict type checking
+- **Performance Monitoring**: Integrated Vercel Analytics for real-time performance insights
+- **Modern Build Pipeline**: Turbopack-powered development with optimized production builds
 
 ## Prerequisites
 
-Before setting up this project, ensure you have the following installed:
+### System Requirements
 
-- Node.js (version 18.0 or higher)
-- npm or yarn package manager
-- Git (for version control)
+| Requirement | Minimum Version | Recommended |
+|-------------|----------------|-------------|
+| **Node.js** | 18.17.0 | 20.x LTS |
+| **npm** | 9.0.0 | Latest |
+| **Git** | 2.34.0 | Latest |
 
-## Installation
+### Development Environment
+- Modern code editor (VS Code recommended with TypeScript extensions)
+- Terminal with PowerShell 5.1+ or equivalent
+- Browser with ES2022 support for development
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd johnrich.dev
-   ```
+## Quick Start
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-   or
-   ```bash
-   yarn install
-   ```
+### 1. Repository Setup
+```powershell
+# Clone the repository
+git clone https://github.com/JohnRichDev/johnrich.dev.git
+cd johnrich.dev
 
-3. **Create environment file (optional)**
-   ```bash
-   cp .env.example .env.local
-   ```
+# Verify Node.js version
+node --version  # Should be 18.17.0 or higher
+```
+
+### 2. Dependency Installation
+```powershell
+# Install project dependencies
+npm install
+
+# Alternative package managers
+# yarn install
+# pnpm install
+```
+
+### 3. Environment Configuration (Optional)
+```powershell
+# Copy environment template
+copy .env.example .env.local
+
+# Configure environment variables as needed
+```
+
+### 4. Development Server Launch
+```powershell
+# Start development server with Turbopack
+npm run dev
+
+# Navigate to http://localhost:3000
+```
 
 ## Configuration
 
-### Discord Integration
+### Discord Integration Setup
 
-The application supports Discord status integration through the [`ProfileConfig.ts`](src/app/components/config/ProfileConfig.ts) file:
+The application provides flexible Discord presence integration through the centralized [`ProfileConfig.ts`](src/app/components/config/ProfileConfig.ts) configuration module:
 
 ```typescript
 export const profileConfig = {
@@ -78,104 +122,237 @@ export const profileConfig = {
 };
 ```
 
-**Configuration Options:**
-- `type`: Choose between 'static' or 'discord' profile display
-- `userId`: Your Discord user ID
-- `apiEndpoint`: Discord presence API endpoint
-- `showStatus`: Enable or disable status indicator
-- `connectionMode`: Choose between WebSocket or polling for real-time updates
-- `pollingInterval`: Polling interval in milliseconds (when using polling mode)
+#### Configuration Parameters
 
-### Static Profile Setup
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `type` | `'static' \| 'discord'` | Profile display mode | `'static'` |
+| `userId` | `string` | Discord user identifier | `''` |
+| `apiEndpoint` | `string` | Discord API endpoint URL | `''` |
+| `showStatus` | `boolean` | Display online status indicator | `true` |
+| `connectionMode` | `'websocket' \| 'polling'` | Real-time connection method | `'websocket'` |
+| `pollingInterval` | `number` | Polling frequency (milliseconds) | `30000` |
 
-For a static profile without Discord integration:
-1. Set `type: 'static'` in [`ProfileConfig.ts`](src/app/components/config/ProfileConfig.ts)
-2. Place your profile image in the `public` directory as `profile.png`
+### Profile Modes
+
+#### Static Profile Configuration
+- Set `type: 'static'` for offline portfolio display
+- Place profile image at `public/profile.png`
+- Optimal image dimensions: 256x256px (PNG/WEBP recommended)
+
+#### Discord Integration Configuration
+- Obtain Discord User ID from Developer Portal
+- Configure secure API endpoint for presence data
+- Implement proper error handling for connection failures
 
 ## Development
 
-1. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-   or
-   ```bash
-   yarn dev
-   ```
+### Local Development Workflow
 
-2. **Access the application**
-   Open your browser and navigate to `http://localhost:3000`
+#### 1. Development Server
+```powershell
+# Start development server with hot reloading
+npm run dev
 
-3. **Development with Turbopack (faster builds)**
-   The project is configured to use Turbopack for faster development builds by default.
+# Alternative with explicit port specification
+npm run dev -- --port 3001
+```
 
-## Build and Deployment
+#### 2. Code Quality Assurance
+```powershell
+# Run ESLint for code analysis
+npm run lint
 
-### Production Build
+# Fix automatically resolvable ESLint issues
+npm run lint -- --fix
 
-1. **Create production build**
-   ```bash
-   npm run build
-   ```
+# Type checking
+npm run type-check
+```
 
-2. **Start production server**
-   ```bash
-   npm run start
-   ```
+#### 3. Development Features
+- **Hot Module Replacement**: Instant updates without page refresh
+- **Turbopack Integration**: Accelerated build performance in development
+- **TypeScript Validation**: Real-time type checking and IntelliSense
+- **Automatic Port Selection**: Fallback to available ports if 3000 is occupied
 
-### Deployment Options
+### Development Best Practices
 
-The application is optimized for deployment on:
-- Vercel (recommended for Next.js applications)
-- Netlify
-- Any Node.js hosting provider
+- Follow the established component architecture patterns
+- Implement proper TypeScript typing for all new components
+- Maintain consistent code formatting with the project's ESLint configuration
+- Test Discord integration with both WebSocket and polling modes
 
-## Project Structure
+## Build & Deployment
 
+### Production Build Process
+
+#### 1. Build Optimization
+```powershell
+# Generate optimized production build
+npm run build
+
+# Verify build output and bundle analysis
+npm run build -- --analyze
+```
+
+#### 2. Local Production Testing
+```powershell
+# Start production server locally
+npm run start
+
+# Verify at http://localhost:3000
+```
+
+### Deployment Strategies
+
+#### Recommended Platforms
+
+| Platform | Suitability | Setup Complexity | Performance |
+|----------|-------------|------------------|-------------|
+| **Vercel** | ⭐⭐⭐⭐⭐ Optimal | Minimal | Excellent |
+| **Netlify** | ⭐⭐⭐⭐ Good | Low | Very Good |
+| **Railway** | ⭐⭐⭐ Suitable | Medium | Good |
+| **Docker** | ⭐⭐⭐⭐ Advanced | High | Configurable |
+
+#### Vercel Deployment (Recommended)
+```powershell
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy to Vercel
+vercel --prod
+```
+
+#### Custom Server Deployment
+```powershell
+# Build for production
+npm run build
+
+# Transfer dist files to server
+# Configure reverse proxy (nginx/Apache)
+# Set NODE_ENV=production
+# Start with process manager (PM2)
+```
+
+## Project Architecture
+
+### Directory Structure Overview
 ```
 src/
-├── app/
-│   ├── components/
-│   │   ├── animations/          # Animation components
-│   │   ├── config/              # Configuration files
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── profile/             # Profile-related components
-│   │   └── ui/                  # Reusable UI components
-│   ├── globals.css              # Global styles
-│   ├── layout.tsx               # Root layout
-│   └── page.tsx                 # Home page
-├── public/                      # Static assets
-└── package.json                 # Project dependencies
+├── app/                          # Next.js App Router directory
+│   ├── components/               # Reusable component library
+│   │   ├── animations/           # Motion & transition components
+│   │   │   ├── index.ts             # Barrel exports
+│   │   │   └── MorphingTitle.tsx    # Dynamic title animations
+│   │   ├── config/               # Application configuration
+│   │   │   ├── index.ts             # Configuration exports
+│   │   │   └── ProfileConfig.ts     # Profile & Discord settings
+│   │   ├── hooks/                # Custom React hooks
+│   │   │   ├── index.ts             # Hook exports
+│   │   │   ├── useDiscordPolling.ts # Polling-based Discord integration
+│   │   │   └── useDiscordSocket.ts  # WebSocket Discord integration
+│   │   ├── profile/              # Profile-specific components
+│   │   │   ├── DiscordProfile.tsx   # Discord integration component
+│   │   │   ├── index.ts             # Profile exports
+│   │   │   └── Profile.tsx          # Main profile component
+│   │   └── ui/                   # Core UI component library
+│   │       ├── AnimatedContainer.tsx # Container with enter/exit animations
+│   │       ├── index.ts             # UI component exports
+│   │       ├── Skeleton.tsx         # Loading state components
+│   │       └── TechBadge.tsx        # Technology skill indicators
+│   ├── globals.css               # Global styles & Tailwind imports
+│   ├── layout.tsx                # Root layout with metadata
+│   └── page.tsx                  # Main application entry point
+└── public/                       # Static asset directory
+    └── profile.png                # Default profile image
 ```
 
-### Key Components
+### Architectural Patterns
 
-- **[`Profile`](src/app/components/profile/Profile.tsx)**: Main profile component with Discord integration
-- **[`MorphingTitle`](src/app/components/animations/MorphingTitle.tsx)**: Animated title component
-- **[`TechBadge`](src/app/components/ui/TechBadge.tsx)**: Technology skill badges
-- **[`AnimatedContainer`](src/app/components/ui/AnimatedContainer.tsx)**: Smooth page transitions
+#### Component Organization
+- **Barrel Exports**: Centralized component exports through `index.ts` files
+- **Feature-Based Grouping**: Related components grouped by functionality
+- **Separation of Concerns**: Clear distinction between UI, business logic, and configuration
 
-## Technologies Used
+#### State Management
+- **React Hooks**: Custom hooks for complex state logic and side effects
+- **Configuration-Driven**: Centralized settings in `ProfileConfig.ts`
+- **Real-time Integration**: Dedicated hooks for Discord API interactions
 
-### Core Technologies
-- **Next.js 15**: React framework with App Router
-- **React 19**: JavaScript library for user interfaces
-- **TypeScript 5**: Static type checking
-- **Tailwind CSS 4**: Utility-first CSS framework
+#### Type Safety
+- **Comprehensive TypeScript**: Strict type checking across all modules
+- **Interface Definitions**: Well-defined component prop interfaces
+- **Generic Components**: Reusable components with proper generic typing
 
-### Additional Libraries
-- **Framer Motion**: Animation library
-- **React Icons**: Icon components
-- **Socket.IO Client**: Real-time communication
-- **Vercel Analytics**: Performance monitoring
+## Technology Stack
 
-### Development Tools
-- **ESLint**: Code linting
-- **PostCSS**: CSS processing
-- **Turbopack**: Fast bundler for development
+### Frontend Framework & Core
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Next.js** | 15.x | Full-stack React framework with App Router | [Next.js Docs](https://nextjs.org/docs) |
+| **React** | 19.x | Component-based UI library | [React Docs](https://react.dev) |
+| **TypeScript** | 5.x | Static type checking and enhanced developer experience | [TypeScript Docs](https://www.typescriptlang.org/docs) |
+
+### Styling & UI Framework
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Tailwind CSS** | 4.x | Utility-first CSS framework | [Tailwind Docs](https://tailwindcss.com/docs) |
+| **Framer Motion** | Latest | Production-ready motion library for React | [Framer Motion](https://www.framer.com/motion) |
+| **React Icons** | Latest | Popular icon library with consistent styling | [React Icons](https://react-icons.github.io/react-icons) |
+
+### Real-time & Networking
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Socket.IO Client** | Latest | Real-time bidirectional event-based communication | [Socket.IO Docs](https://socket.io/docs/v4) |
+| **Native Fetch API** | Browser Native | HTTP client for REST API interactions | [MDN Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) |
+
+### Development & Build Tools
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Turbopack** | Latest | High-performance bundler for Next.js | [Turbopack Docs](https://turbo.build/pack/docs) |
+| **ESLint** | 9.x | JavaScript/TypeScript linting and code quality | [ESLint Docs](https://eslint.org/docs) |
+| **PostCSS** | Latest | CSS transformation and optimization | [PostCSS Docs](https://postcss.org) |
+
+### Monitoring & Analytics
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Vercel Analytics** | Latest | Performance monitoring and user insights | [Vercel Analytics](https://vercel.com/docs/analytics) |
+
+### Deployment & Infrastructure
+- **Vercel Platform**: Serverless deployment with global CDN
+- **Edge Runtime**: Optimized for performance and reduced cold starts
+- **Automatic HTTPS**: SSL certificate management and security headers
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### MIT License
 
-Copyright © 2025 JohnRichDev. Anyone is free to use this code with proper attribution.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for complete terms and conditions.
+
+#### Permission Summary
+**Commercial use** - Use in commercial projects  
+**Modification** - Modify and adapt the code  
+**Distribution** - Share and distribute the code  
+**Private use** - Use for private projects  
+
+#### Limitations
+**Liability** - Author not liable for damages  
+**Warranty** - Software provided "as is"  
+
+#### Attribution Required
+Copyright notice and license text must be included in all copies or substantial portions
+
+---
+
+<div align="center">
+
+**Copyright © 2025 [JohnRichDev](https://github.com/JohnRichDev)**
+
+*Built with modern web technologies using Next.js, TypeScript, and cutting-edge development practices*
+
+[![GitHub Stars](https://img.shields.io/github/stars/JohnRichDev/johnrich.dev?style=social)](https://github.com/JohnRichDev/johnrich.dev)
+[![GitHub Issues](https://img.shields.io/github/issues/JohnRichDev/johnrich.dev?style=flat-square)](https://github.com/JohnRichDev/johnrich.dev/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/JohnRichDev/johnrich.dev?style=flat-square)](https://github.com/JohnRichDev/johnrich.dev/pulls)
+
+</div>
