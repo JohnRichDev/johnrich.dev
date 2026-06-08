@@ -9,7 +9,7 @@
 
 *A cutting-edge portfolio platform showcasing technical expertise through real-time integrations and modern web technologies*
 
-[Live Demo](https://johnrich.dev) • [Contact](mailto:contact@johnrich.dev) • [LinkedIn](https://linkedin.com/in/johnrich)
+[Live Demo](https://johnrich.dev) • [Contact](mailto:me@johnrich.dev) <!--• [LinkedIn](https://linkedin.com/in/johnrichdev) -->
 
 </div>
 
@@ -347,7 +347,7 @@ Copyright notice and license text must be included in all copies or substantial 
 
 <div align="center">
 
-**Copyright © 2025 [JohnRichDev](https://github.com/JohnRichDev)**
+**Copyright © 2026 [JohnRichDev](https://github.com/JohnRichDev)**
 
 *Built with modern web technologies using Next.js, TypeScript, and cutting-edge development practices*
 
